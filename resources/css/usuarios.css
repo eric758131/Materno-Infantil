@@ -1,0 +1,69 @@
+/* Estilos para el módulo de usuarios */
+.avatar-sm {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.avatar-lg {
+    width: 5rem;
+    height: 5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Mejoras para tablas */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badges personalizados */
+.badge {
+    font-size: 0.75em;
+}
+
+/* Cards con sombras suaves */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Formularios */
+.form-text {
+    font-size: 0.8rem;
+}
+
+/* Botones con iconos */
+.btn i {
+    margin-right: 0.25rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .avatar-lg {
+        width: 4rem;
+        height: 4rem;
+        font-size: 1.2rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.8rem;
+    }
+}
+
+/* Estados de los campos */
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Mejoras para los checkboxes de roles */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
