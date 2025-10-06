@@ -1,0 +1,143 @@
+/* Estilos para el formulario de pacientes */
+.section-patient,
+.section-tutor {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.section-tutor {
+    border-left-color: #28a745;
+}
+
+.section-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    padding: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: #28a745;
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #545b62);
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #545b62, #3d4246);
+    transform: translateY(-2px);
+}
+
+.invalid-feedback {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.text-danger.small {
+    font-size: 0.875rem;
+}
+
+/* Estilos para los campos requeridos */
+.form-control:required,
+.form-select:required {
+    background-color: #fff;
+}
+
+/* Efectos hover en las secciones */
+.section-patient:hover,
+.section-tutor:hover {
+    background: #f1f3f4;
+    transition: background 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .section-patient,
+    .section-tutor {
+        padding: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-end {
+        text-align: left !important;
+    }
+}
+
+/* Estilos para los placeholders */
+.form-control::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* Animación para los labels */
+.form-label {
+    transition: color 0.3s ease;
+}
+
+.form-control:focus ~ .form-label {
+    color: #007bff;
+}

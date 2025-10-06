@@ -34,3 +34,22 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/usuarios/{usuario}', [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
     });
 });
+
+
+
+use App\Http\Controllers\PacienteController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        // Rutas para pacientes (incluyen gestión de tutores)
+        Route::resource('pacientes', PacienteController::class);
+
+        // Ruta adicional para buscar tutores (para select2 o similar)
+        Route::get('/pacientes/tutores/buscar', [PacienteController::class, 'getTutores'])
+            ->name('pacientes.tutores.buscar');
+
+        // Ruta para cambiar estado del paciente
+        Route::patch('/pacientes/{paciente}/estado', [PacienteController::class, 'destroy'])
+            ->name('pacientes.estado');
+    });
+});

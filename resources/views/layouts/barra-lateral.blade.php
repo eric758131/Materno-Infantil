@@ -35,6 +35,17 @@
             @endif
         @endauth
 
+        @auth
+            @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin']))
+                <li class="nav-item mb-1">
+                       <a href="{{ route('pacientes.index') }}" class="nav-link d-flex align-items-center rounded p-2 bg-secondary">
+                              <i class="fas fa-user-injured me-3"></i>
+                         <span>Pacientes</span>
+                      </a>
+                 </li>
+                @endif
+        @endauth
+
 
 
         <form action="{{ route('logout') }}" method="POST" style="display: inline;">
