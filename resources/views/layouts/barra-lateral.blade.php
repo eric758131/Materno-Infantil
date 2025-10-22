@@ -46,6 +46,18 @@
                 @endif
         @endauth
 
+        @auth
+            @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin']))
+                <li class="nav-item mb-1">
+                    <a href="{{ route('medidas.index') }}" class="nav-link d-flex align-items-center rounded p-2 bg-secondary">
+                        <i class="fas fa-ruler-combined me-3"></i>
+                        <span>Medidas Antropométricas</span>
+                    </a>
+                </li>
+            @endif
+        @endauth
+
+
 
 
         <form action="{{ route('logout') }}" method="POST" style="display: inline;">

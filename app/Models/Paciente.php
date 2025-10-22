@@ -17,7 +17,7 @@ class Paciente extends Model
         'fecha_nacimiento',
         'genero',
         'estado',
-        'tutor_id' // Agregar este campo
+        'tutor_id' 
     ];
 
     protected $casts = [
@@ -44,9 +44,27 @@ class Paciente extends Model
         return $query->where('estado', 'inactivo');
     }
 
-    // Relación con tutor (agregar esto)
     public function tutor()
     {
         return $this->belongsTo(Tutor::class);
     }
+
+     public function medidas()
+    {
+        return $this->hasMany(Medida::class, 'paciente_id');
+    }
+
+    // Acceso directo a evaluaciones a través de medidas
+    public function evaluaciones()
+    {
+        return $this->hasManyThrough(
+            Evaluacion::class,   // modelo destino
+            Medida::class,       // modelo intermedio
+            'paciente_id',       // FK en medidas -> pacientes
+            'medida_id',         // FK en evaluaciones -> medidas
+            'id',                // PK en pacientes
+            'id'                 // PK en medidas
+        );
+    }
+
 }

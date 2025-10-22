@@ -53,3 +53,41 @@ Route::middleware(['auth'])->group(function () {
             ->name('pacientes.estado');
     });
 });
+
+
+
+use App\Http\Controllers\SeguimientoController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        Route::resource('seguimientos', SeguimientoController::class);
+
+        Route::prefix('seguimientos')->controller(SeguimientoController::class)->group(function () {
+            Route::post('/{seguimiento}/activar', 'activar')->name('seguimientos.activar');
+            Route::post('/{seguimiento}/desactivar', 'desactivar')->name('seguimientos.desactivar');
+            Route::post('/buscar', 'buscar')->name('seguimientos.buscar');
+        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.show');
+        Route::resource('seguimientos', SeguimientoController::class)->except(['show']);
+        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.paciente.show');
+        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.show');
+        });
+    });
+});
+
+
+
+
+
+use App\Http\Controllers\MedidaController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        Route::controller(MedidaController::class)->group(function () {
+        Route::get('/medidas', 'index')->name('medidas.index');
+        Route::get('/medidas/create/{paciente}', 'create')->name('medidas.create');
+        Route::post('/medidas', 'store')->name('medidas.store');
+        Route::get('/medidas/{medida}', 'show')->name('medidas.show');
+        Route::get('/medidas/{medida}/calculos', [MedidaController::class, 'calculos'])->name('medidas.calculos');
+    });
+    });
+});
