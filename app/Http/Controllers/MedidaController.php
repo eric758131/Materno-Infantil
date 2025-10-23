@@ -51,17 +51,17 @@ class MedidaController extends Controller
             // Obtener paciente y datos
             $paciente = Paciente::findOrFail($request->paciente_id);
             
-            // Calcular edad en meses
+            // Calcular edad en meses (REDONDEAR A ENTERO)
             $fechaNacimiento = Carbon::parse($paciente->fecha_nacimiento);
             $fechaMedida = Carbon::parse($request->fecha);
-            $edadMeses = $fechaNacimiento->diffInMonths($fechaMedida);
+            $edadMeses = (int) round($fechaNacimiento->diffInMonths($fechaMedida)); // Redondear a entero
             $edadAnios = floor($edadMeses / 12);
 
             // Crear la medida
             $medida = Medida::create([
                 'paciente_id' => $request->paciente_id,
                 'fecha' => $request->fecha,
-                'edad_meses' => $edadMeses,
+                'edad_meses' => $edadMeses, // Ahora es entero
                 'peso_kg' => $request->peso_kg,
                 'talla_cm' => $request->talla_cm,
                 'pb_mm' => $request->pb_mm,
@@ -78,8 +78,8 @@ class MedidaController extends Controller
 
             // Buscar referencia OMS
             $omsRef = OmsRef::where('genero', $paciente->genero)
-                           ->where('edad_meses', $edadMeses)
-                           ->first();
+                        ->where('edad_meses', $edadMeses) // Ahora coincide con entero
+                        ->first();
 
             if (!$omsRef) {
                 throw new \Exception("No se encontró referencia OMS para género {$paciente->genero} y edad {$edadMeses} meses");
@@ -94,8 +94,8 @@ class MedidaController extends Controller
 
             // Buscar referencia Frisancho
             $frisanchoRef = FrisanchoRef::where('genero', $paciente->genero)
-                                       ->where('edad_anios', $edadAnios)
-                                       ->first();
+                                    ->where('edad_anios', $edadAnios)
+                                    ->first();
 
             if (!$frisanchoRef) {
                 throw new \Exception("No se encontró referencia Frisancho para género {$paciente->genero} y edad {$edadAnios} años");
@@ -137,7 +137,7 @@ class MedidaController extends Controller
             ]);
 
             return redirect()->route('medidas.show', $medida->id)
-                           ->with('success', 'Evaluación creada exitosamente. Complete los diagnósticos.');
+                        ->with('success', 'Evaluación creada exitosamente. Complete los diagnósticos.');
         });
     }
 

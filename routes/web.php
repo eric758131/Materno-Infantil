@@ -83,6 +83,9 @@ use App\Http\Controllers\MedidaController;
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
         Route::controller(MedidaController::class)->group(function () {
+            Route::get('/molecula-calorica/{paciente}', [MoleculaCaloricaController::class, 'show'])
+    ->name('molecula_calorica.show');
+
         Route::get('/medidas', 'index')->name('medidas.index');
         Route::get('/medidas/create/{paciente}', 'create')->name('medidas.create');
         Route::post('/medidas', 'store')->name('medidas.store');
@@ -90,4 +93,24 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/medidas/{medida}/calculos', [MedidaController::class, 'calculos'])->name('medidas.calculos');
     });
     });
+});
+
+
+
+
+
+
+
+
+use App\Http\Controllers\MoleculaCaloricaController;
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        Route::resource('molecula-calorica', MoleculaCaloricaController::class)
+            ->parameters(['molecula-calorica' => 'molecula_calorica'])
+            ->names('molecula_calorica');
+
+        // Ruta adicional para toggle estado
+        Route::patch('molecula-calorica/{id}/toggle-estado', [MoleculaCaloricaController::class, 'toggleEstado'])
+            ->name('molecula_calorica.toggle_estado');
+        });
 });

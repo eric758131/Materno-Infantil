@@ -230,4 +230,9 @@ class PacienteController extends Controller
 
         return response()->json($tutores);
     }
+
+    public function moleculasCaloricas()
+    {
+        return $this->hasMany(MoleculaCalorica::class);
+    }
 }
