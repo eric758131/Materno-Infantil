@@ -56,4 +56,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // En app/Models/User.php
+    public function getNombreCompletoAttribute()
+    {
+        return $this->nombre . ' ' . $this->apellido_paterno . 
+            ($this->apellido_materno ? ' ' . $this->apellido_materno : '');
+    }
+
+        public function requerimientosNutricionalesRegistrados(): HasMany
+    {
+        return $this->hasMany(RequerimientoNutricional::class, 'registrado_por');
+    }
+
+    public function moleculasCaloricasRegistradas(): HasMany
+    {
+        return $this->hasMany(MoleculaCalorica::class, 'registrado_por');
+    }
 }

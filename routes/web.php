@@ -98,19 +98,47 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+use App\Http\Controllers\RequerimientoNutricionalController;
 
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        Route::resource('requerimiento_nutricional', RequerimientoNutricionalController::class)
+            ->parameters([
+                'requerimiento_nutricional' => 'requerimientoNutricional'
+            ])
+            ->names([
+                'index' => 'requerimiento_nutricional.index',
+                'create' => 'requerimiento_nutricional.create',
+                'store' => 'requerimiento_nutricional.store',
+                'show' => 'requerimiento_nutricional.show',
+                'edit' => 'requerimiento_nutricional.edit',
+                'update' => 'requerimiento_nutricional.update',
+                'destroy' => 'requerimiento_nutricional.destroy',
+            ]);
 
+        // Ruta adicional para cambiar estado
+        Route::patch('requerimiento_nutricional/{requerimientoNutricional}/cambiar-estado', 
+            [RequerimientoNutricionalController::class, 'cambiarEstado'])
+            ->name('requerimiento_nutricional.cambiar-estado');
+
+        // Ruta para obtener última medida (AJAX)
+        Route::get('requerimiento_nutricional/ultima-medida/{pacienteId}', 
+            [RequerimientoNutricionalController::class, 'getUltimaMedida'])
+            ->name('requerimiento_nutricional.ultima-medida');
+            Route::get('requerimiento_nutricional/historial/{paciente}', 
+    [RequerimientoNutricionalController::class, 'historial'])
+    ->name('requerimiento_nutricional.historial');
+    });
+});
 
 
 use App\Http\Controllers\MoleculaCaloricaController;
-Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
-        Route::resource('molecula-calorica', MoleculaCaloricaController::class)
-            ->parameters(['molecula-calorica' => 'molecula_calorica'])
-            ->names('molecula_calorica');
 
-        // Ruta adicional para toggle estado
-        Route::patch('molecula-calorica/{id}/toggle-estado', [MoleculaCaloricaController::class, 'toggleEstado'])
-            ->name('molecula_calorica.toggle_estado');
-        });
-});
+Route::get('moleculaCalorica', [MoleculaCaloricaController::class, 'index'])->name('moleculaCalorica.index');
+Route::get('moleculaCalorica/create', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create');
+Route::get('moleculaCalorica/create/{paciente}', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create.for.paciente');
+Route::post('moleculaCalorica', [MoleculaCaloricaController::class, 'store'])->name('moleculaCalorica.store');
+Route::get('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'show'])->name('moleculaCalorica.show');
+Route::get('moleculaCalorica/{moleculaCalorica}/edit', [MoleculaCaloricaController::class, 'edit'])->name('moleculaCalorica.edit');
+Route::put('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'update'])->name('moleculaCalorica.update');
+Route::delete('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'destroy'])->name('moleculaCalorica.destroy');

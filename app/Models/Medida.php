@@ -35,4 +35,14 @@ class Medida extends Model
     {
         return $this->hasMany(Evaluacion::class, 'medida_id');
     }
+
+    public function requerimientosNutricionales(): HasMany
+    {
+        return $this->hasMany(RequerimientoNutricional::class);
+    }
+
+    public function moleculasCaloricas(): HasMany
+    {
+        return $this->hasMany(MoleculaCalorica::class);
+    }
 }

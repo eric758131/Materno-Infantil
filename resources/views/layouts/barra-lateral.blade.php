@@ -57,17 +57,28 @@
             @endif
         @endauth
 
+        
+
         @auth
             @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin']))
                 <li class="nav-item mb-1">
-                    <a href="{{ route('molecula_calorica.index') }}" class="nav-link d-flex align-items-center rounded p-2 bg-secondary">
+                    <a href="{{ route('requerimiento_nutricional.index') }}" class="nav-link d-flex align-items-center rounded p-2 bg-secondary">
                         <i class="fas fa-atom me-3"></i>
-                        <span>Moléculas Calóricas</span>
+                        <span>Requerimiento nutricional</span>
                     </a>
                 </li>
             @endif
         @endauth
 
+        @auth
+            @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin']))
+                <li class="nav-item mb-1">
+                    <a href="{{ route('moleculaCalorica.index') }}" class="nav-link d-flex align-items-center rounded p-2 bg-secondary">
+                        <span>Moléculas Calóricas</span>
+                    </a>
+                </li>
+            @endif
+        @endauth
 
 
 

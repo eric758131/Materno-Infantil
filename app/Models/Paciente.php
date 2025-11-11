@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class Paciente extends Model
 {
@@ -66,5 +68,27 @@ class Paciente extends Model
             'id'                 // PK en medidas
         );
     }
+
+    public function requerimientosNutricionales()
+    {
+        return $this->hasMany(RequerimientoNutricional::class);
+    }
+
+
+    public function moleculasCaloricas(): HasMany
+    {
+        return $this->hasMany(MoleculaCalorica::class);
+    }
+
+    public function ultimaMoleculaCaloricaActiva()
+    {
+        return $this->hasOne(MoleculaCalorica::class)->where('estado', 'activo')->latest();
+    }
+
+
+
+
+
+
 
 }

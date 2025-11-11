@@ -2,161 +2,153 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MoleculaCalorica;
 use App\Models\Paciente;
+use App\Models\MoleculaCalorica;
+use App\Models\RequerimientoNutricional;
 use App\Models\Medida;
 use Illuminate\Http\Request;
 
 class MoleculaCaloricaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index()
     {
-        $query = MoleculaCalorica::with(['paciente' => function($query) {
-            $query->select('id', 'nombre', 'apellido_paterno', 'apellido_materno', 'CI');
-        }]);
+        $pacientes = Paciente::orderBy('nombre')
+            ->orderBy('apellido_paterno')
+            ->orderBy('apellido_materno')
+            ->get();
 
-        // Búsqueda
-        if ($request->has('search') && !empty($request->search)) {
-            $query->search($request->search);
-        }
-
-        // Filtro por estado
-        if ($request->has('estado') && in_array($request->estado, ['activo', 'inactivo'])) {
-            if ($request->estado === 'activo') {
-                $query->activos();
-            } else {
-                $query->inactivos();
-            }
-        }
-
-        // Obtener la molécula más reciente por paciente
-        $moleculasCaloricas = $query->latest()->get()
-            ->unique('paciente_id')
-            ->values();
-
-        return view('molecula_calorica.index', compact('moleculasCaloricas'));
+        return view('moleculaCalorica.index', compact('pacientes'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(Request $request)
+    public function create($pacienteId)
     {
-        $pacienteId = $request->paciente_id;
+        $paciente = Paciente::findOrFail($pacienteId);
         
-        if (!$pacienteId) {
-            return redirect()->route('molecula_calorica.index')
-                ->with('error', 'Debe seleccionar un paciente');
+        $requerimiento = $paciente->requerimientosNutricionales()
+            ->where('estado', 'activo')
+            ->latest()
+            ->first();
+
+        if (!$requerimiento) {
+            return redirect()->route('moleculaCalorica.index')
+                ->with('error', 'El paciente no tiene un requerimiento nutricional activo.');
         }
 
-        $paciente = Paciente::with(['medidas' => function($query) {
-            $query->latest()->take(1);
-        }])->findOrFail($pacienteId);
+        $medida = $paciente->medidas()->latest()->first();
 
-        $ultimoPeso = $paciente->medidas->first()?->peso_kg ?? 0;
-
-        return view('molecula_calorica.create', compact('paciente', 'ultimoPeso'));
+        return view('moleculaCalorica.create', compact('paciente', 'requerimiento', 'medida'));
     }
 
-    /**
-     * Store a newly created resource.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'paciente_id' => 'required|exists:pacientes,id',
-            'peso_kg' => 'required|numeric|min:0.1|max:500',
-            'proteínas_g_kg' => 'required|numeric|min:0|max:50',
-            'grasa_g_kg' => 'required|numeric|min:0|max:50',
-            'carbohidratos_g_kg' => 'required|numeric|min:0|max:50',
-            'estado' => 'required|in:activo,inactivo'
+            'proteinas_g_kg' => 'required|numeric|min:0.1|max:5',
+            'porcentaje_grasas' => 'required|numeric|min:0.05|max:0.6',
+            'requerimiento_id' => 'required|exists:requerimientos_nutricionales,id',
+            'medida_id' => 'nullable|exists:medidas,id',
+            'peso_kg' => 'required|numeric|min:1',
+            'talla_cm' => 'required|numeric|min:1',
+            'kilocalorias_totales' => 'required|numeric|min:1',
         ]);
 
-        $moleculaCalorica = new MoleculaCalorica($validated);
-        
-        // Calcular kilocalorías
-        $moleculaCalorica->calcularKilocalorias();
-        
-        $moleculaCalorica->save();
+        try {
+            $molecula = new MoleculaCalorica();
+            $molecula->paciente_id = $validated['paciente_id'];
+            $molecula->requerimiento_id = $validated['requerimiento_id'];
+            $molecula->medida_id = $validated['medida_id'];
+            $molecula->peso_kg = $validated['peso_kg'];
+            $molecula->talla_cm = $validated['talla_cm'];
+            $molecula->kilocalorias_totales = $validated['kilocalorias_totales'];
+            $molecula->registrado_por = auth()->id();
+            
+            $molecula->calcularMoleculaCalorica(
+                $validated['proteinas_g_kg'],
+                $validated['porcentaje_grasas']
+            );
 
-        return redirect()->route('molecula_calorica.index')
-            ->with('success', 'Molécula calórica creada exitosamente');
+            $molecula->save();
+
+            return redirect()->route('moleculaCalorica.index')
+                ->with('success', 'Molécula calórica calculada y guardada exitosamente.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error al calcular la molécula calórica: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
-        $paciente = Paciente::with(['moleculasCaloricas' => function($query) {
-            $query->latest();
-        }])->findOrFail($id);
+        $molecula = MoleculaCalorica::with(['paciente', 'requerimiento', 'medida', 'registradoPor'])
+            ->findOrFail($id);
 
-        return view('molecula_calorica.show', compact('paciente'));
+        return view('moleculaCalorica.show', compact('molecula'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
-        $moleculaCalorica = MoleculaCalorica::with('paciente')->findOrFail($id);
-        return view('molecula_calorica.edit', compact('moleculaCalorica'));
+        $molecula = MoleculaCalorica::with(['paciente', 'requerimiento', 'medida'])
+            ->findOrFail($id);
+
+        $ultimoRequerimiento = $molecula->paciente->requerimientosNutricionales()
+            ->where('estado', 'activo')
+            ->latest()
+            ->first();
+
+        $ultimaMedida = $molecula->paciente->medidas()
+            ->latest()
+            ->first();
+
+        return view('moleculaCalorica.edit', compact('molecula', 'ultimoRequerimiento', 'ultimaMedida'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
-        $moleculaCalorica = MoleculaCalorica::findOrFail($id);
+        $molecula = MoleculaCalorica::findOrFail($id);
 
         $validated = $request->validate([
-            'peso_kg' => 'required|numeric|min:0.1|max:500',
-            'proteínas_g_kg' => 'required|numeric|min:0|max:50',
-            'grasa_g_kg' => 'required|numeric|min:0|max:50',
-            'carbohidratos_g_kg' => 'required|numeric|min:0|max:50',
-            'estado' => 'required|in:activo,inactivo'
+            'proteinas_g_kg' => 'required|numeric|min:0.1|max:5',
+            'porcentaje_grasas' => 'required|numeric|min:0.05|max:0.6',
+            'requerimiento_id' => 'required|exists:requerimientos_nutricionales,id',
+            'medida_id' => 'nullable|exists:medidas,id',
+            'peso_kg' => 'required|numeric|min:1',
+            'talla_cm' => 'required|numeric|min:1',
+            'kilocalorias_totales' => 'required|numeric|min:1',
         ]);
 
-        $moleculaCalorica->fill($validated);
-        
-        // Recalcular kilocalorías
-        $moleculaCalorica->calcularKilocalorias();
-        
-        $moleculaCalorica->save();
+        try {
+            $molecula->requerimiento_id = $validated['requerimiento_id'];
+            $molecula->medida_id = $validated['medida_id'];
+            $molecula->peso_kg = $validated['peso_kg'];
+            $molecula->talla_cm = $validated['talla_cm'];
+            $molecula->kilocalorias_totales = $validated['kilocalorias_totales'];
+            
+            $molecula->calcularMoleculaCalorica(
+                $validated['proteinas_g_kg'],
+                $validated['porcentaje_grasas']
+            );
 
-        return redirect()->route('molecula_calorica.show', $moleculaCalorica->paciente_id)
-            ->with('success', 'Molécula calórica actualizada exitosamente');
+            $molecula->save();
+
+            return redirect()->route('moleculaCalorica.index')
+                ->with('success', 'Molécula calórica actualizada exitosamente.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error al actualizar la molécula calórica: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
+    public function destroy(MoleculaCalorica $moleculaCalorica)
     {
-        $moleculaCalorica = MoleculaCalorica::findOrFail($id);
-        $pacienteId = $moleculaCalorica->paciente_id;
-        $moleculaCalorica->delete();
-
-        return redirect()->route('molecula_calorica.show', $pacienteId)
-            ->with('success', 'Molécula calórica eliminada exitosamente');
-    }
-
-    /**
-     * Toggle the estado of the specified resource.
-     */
-    public function toggleEstado($id)
-    {
-        $moleculaCalorica = MoleculaCalorica::findOrFail($id);
-        
         $moleculaCalorica->estado = $moleculaCalorica->estado === 'activo' ? 'inactivo' : 'activo';
         $moleculaCalorica->save();
 
-        return redirect()->back()
-            ->with('success', 'Estado actualizado exitosamente');
+        $action = $moleculaCalorica->estado === 'activo' ? 'reactivada' : 'desactivada';
+        return redirect()->route('moleculaCalorica.index')
+            ->with('success', "Molécula calórica $action exitosamente");
     }
 }
