@@ -45,23 +45,263 @@ class MedidaController extends Controller
         return view('medidas.create', compact('paciente'));
     }
 
+    public function edit(Medida $medida)
+    {
+        $medida->load([
+            'paciente', 
+            'evaluaciones.omsRef', 
+            'evaluaciones.frisanchoRef',
+            'evaluaciones.usuario'
+        ]);
+        
+        return view('medidas.edit', compact('medida'));
+    }
+
+    public function update(Request $request, Medida $medida)
+    {
+        return DB::transaction(function () use ($request, $medida) {
+            // Validar datos completos incluyendo diagnósticos
+            $request->validate([
+                'fecha' => 'required|date',
+                'peso_kg' => 'required|numeric|min:0',
+                'talla_cm' => 'required|numeric|min:0',
+                'pb_mm' => 'required|numeric|min:0',
+                'pct_mm' => 'required|numeric|min:0',
+                'dx_z_imc' => 'required|string',
+                'dx_z_talla' => 'required|string',
+                'dx_z_pb' => 'required|string',
+                'dx_z_pct' => 'required|string',
+                'dx_z_cmb' => 'required|string',
+                'dx_z_amb' => 'required|string',
+                'dx_z_agb' => 'required|string',
+            ]);
+
+            // Obtener paciente
+            $paciente = $medida->paciente;
+            
+            // Calcular edad en meses (REDONDEAR A ENTERO)
+            $fechaNacimiento = Carbon::parse($paciente->fecha_nacimiento);
+            $fechaMedida = Carbon::parse($request->fecha);
+            $edadMeses = (int) round($fechaNacimiento->diffInMonths($fechaMedida));
+            $edadAnios = floor($edadMeses / 12);
+
+            // Actualizar la medida
+            $medida->update([
+                'fecha' => $request->fecha,
+                'edad_meses' => $edadMeses,
+                'peso_kg' => $request->peso_kg,
+                'talla_cm' => $request->talla_cm,
+                'pb_mm' => $request->pb_mm,
+                'pct_mm' => $request->pct_mm,
+            ]);
+
+            // Calcular medidas derivadas
+            $tallaMetros = $request->talla_cm / 100;
+            $imc = $request->peso_kg / ($tallaMetros * $tallaMetros);
+            $cmb = $request->pb_mm - (3.1416 * $request->pct_mm);
+            $amb = (($cmb * $cmb) / 12.57) - 100;
+            $agb = (($request->pb_mm * $request->pb_mm) / 12.57) - ($amb + 100);
+
+            // Buscar referencia OMS
+            $omsRef = OmsRef::where('genero', $paciente->genero)
+                        ->where('edad_meses', $edadMeses)
+                        ->first();
+
+            if (!$omsRef) {
+                throw new \Exception("No se encontró referencia OMS para género {$paciente->genero} y edad {$edadMeses} meses");
+            }
+
+            // Calcular z-scores OMS
+            $z_imc = $this->calcularZScore($imc, $omsRef->imc_mediana, $omsRef->imc_mas_sd, $omsRef->imc_menos_sd);
+            $z_talla = $this->calcularZScore($request->talla_cm, $omsRef->talla_mediana_cm, $omsRef->talla_mas_sd_cm, $omsRef->talla_menos_sd_cm);
+            
+            $pesoIdeal = $omsRef->imc_mediana * ($tallaMetros * $tallaMetros);
+            $difPeso = $request->peso_kg - $pesoIdeal;
+
+            // Buscar referencia Frisancho
+            $frisanchoRef = FrisanchoRef::where('genero', $paciente->genero)
+                                    ->where('edad_anios', $edadAnios)
+                                    ->first();
+
+            if (!$frisanchoRef) {
+                throw new \Exception("No se encontró referencia Frisancho para género {$paciente->genero} y edad {$edadAnios} años");
+            }
+
+            // Calcular z-scores Frisancho
+            $z_pb = $this->calcularZScore($request->pb_mm, $frisanchoRef->pb_dato, $frisanchoRef->pb_mas_sd, $frisanchoRef->pb_menos_sd);
+            $z_pct = $this->calcularZScore($request->pct_mm, $frisanchoRef->pct_dato, $frisanchoRef->pct_mas_sd, $frisanchoRef->pct_menos_sd);
+            $z_cmb = $this->calcularZScore($cmb, $frisanchoRef->cmb_dato, $frisanchoRef->cmb_mas_sd, $frisanchoRef->cmb_menos_sd);
+            $z_amb = $this->calcularZScore($amb, $frisanchoRef->amb_dato, $frisanchoRef->amb_mas_sd, $frisanchoRef->amb_menos_sd);
+            $z_agb = $this->calcularZScore($agb, $frisanchoRef->agb_dato, $frisanchoRef->agb_mas_sd, $frisanchoRef->agb_menos_sd);
+
+            // Actualizar evaluación
+            $evaluacion = $medida->evaluaciones->first();
+            $evaluacion->update([
+                'oms_ref_id' => $omsRef->id,
+                'frisancho_ref_id' => $frisanchoRef->id,
+                'imc' => $imc,
+                'peso_ideal' => $pesoIdeal,
+                'dif_peso' => $difPeso,
+                'cmb_mm' => $cmb,
+                'amb_mm2' => $amb,
+                'agb_mm2' => $agb,
+                'z_imc' => $z_imc,
+                'z_talla' => $z_talla,
+                'z_pb' => $z_pb,
+                'z_pct' => $z_pct,
+                'z_cmb' => $z_cmb,
+                'z_amb' => $z_amb,
+                'z_agb' => $z_agb,
+                'dx_z_imc' => $request->dx_z_imc,
+                'dx_z_talla' => $request->dx_z_talla,
+                'dx_z_pb' => $request->dx_z_pb,
+                'dx_z_pct' => $request->dx_z_pct,
+                'dx_z_cmb' => $request->dx_z_cmb,
+                'dx_z_amb' => $request->dx_z_amb,
+                'dx_z_agb' => $request->dx_z_agb,
+            ]);
+
+            return redirect()->route('medidas.show', $medida->id)
+                        ->with('success', 'Evaluación actualizada exitosamente.');
+        });
+    }
+
+    public function calcularPreview(Request $request)
+    {
+        try {
+            // Validar datos básicos
+            $request->validate([
+                'paciente_id' => 'required|exists:pacientes,id',
+                'fecha' => 'required|date',
+                'peso_kg' => 'required|numeric|min:0',
+                'talla_cm' => 'required|numeric|min:0',
+                'pb_mm' => 'required|numeric|min:0',
+                'pct_mm' => 'required|numeric|min:0',
+            ]);
+
+            $paciente = Paciente::findOrFail($request->paciente_id);
+            
+            // Calcular edad en meses (REDONDEAR A ENTERO)
+            $fechaNacimiento = Carbon::parse($paciente->fecha_nacimiento);
+            $fechaMedida = Carbon::parse($request->fecha);
+            $edadMeses = (int) round($fechaNacimiento->diffInMonths($fechaMedida));
+            $edadAnios = floor($edadMeses / 12);
+
+            // Calcular medidas derivadas
+            $tallaMetros = $request->talla_cm / 100;
+            $imc = $request->peso_kg / ($tallaMetros * $tallaMetros);
+            $cmb = $request->pb_mm - (3.1416 * $request->pct_mm);
+            $amb = (($cmb * $cmb) / 12.57) - 100;
+            $agb = (($request->pb_mm * $request->pb_mm) / 12.57) - ($amb + 100);
+
+            // Buscar referencia OMS
+            $omsRef = OmsRef::where('genero', $paciente->genero)
+                        ->where('edad_meses', $edadMeses)
+                        ->first();
+
+            if (!$omsRef) {
+                return response()->json([
+                    'success' => false,
+                    'error' => "No se encontró referencia OMS para género {$paciente->genero} y edad {$edadMeses} meses"
+                ], 404);
+            }
+
+            // Calcular z-scores OMS
+            $z_imc = $this->calcularZScore($imc, $omsRef->imc_mediana, $omsRef->imc_mas_sd, $omsRef->imc_menos_sd);
+            $z_talla = $this->calcularZScore($request->talla_cm, $omsRef->talla_mediana_cm, $omsRef->talla_mas_sd_cm, $omsRef->talla_menos_sd_cm);
+            
+            $pesoIdeal = $omsRef->imc_mediana * ($tallaMetros * $tallaMetros);
+            $difPeso = $request->peso_kg - $pesoIdeal;
+
+            // Buscar referencia Frisancho
+            $frisanchoRef = FrisanchoRef::where('genero', $paciente->genero)
+                                    ->where('edad_anios', $edadAnios)
+                                    ->first();
+
+            if (!$frisanchoRef) {
+                return response()->json([
+                    'success' => false,
+                    'error' => "No se encontró referencia Frisancho para género {$paciente->genero} y edad {$edadAnios} años"
+                ], 404);
+            }
+
+            // Calcular z-scores Frisancho
+            $z_pb = $this->calcularZScore($request->pb_mm, $frisanchoRef->pb_dato, $frisanchoRef->pb_mas_sd, $frisanchoRef->pb_menos_sd);
+            $z_pct = $this->calcularZScore($request->pct_mm, $frisanchoRef->pct_dato, $frisanchoRef->pct_mas_sd, $frisanchoRef->pct_menos_sd);
+            $z_cmb = $this->calcularZScore($cmb, $frisanchoRef->cmb_dato, $frisanchoRef->cmb_mas_sd, $frisanchoRef->cmb_menos_sd);
+            $z_amb = $this->calcularZScore($amb, $frisanchoRef->amb_dato, $frisanchoRef->amb_mas_sd, $frisanchoRef->amb_menos_sd);
+            $z_agb = $this->calcularZScore($agb, $frisanchoRef->agb_dato, $frisanchoRef->agb_mas_sd, $frisanchoRef->agb_menos_sd);
+
+            // Retornar resultados del cálculo
+            return response()->json([
+                'success' => true,
+                'calculos' => [
+                    'edad_meses' => $edadMeses,
+                    'edad_anios' => $edadAnios,
+                    'imc' => round($imc, 2),
+                    'cmb_mm' => round($cmb, 1),
+                    'amb_mm2' => round($amb, 1),
+                    'agb_mm2' => round($agb, 1),
+                    'peso_ideal' => round($pesoIdeal, 2),
+                    'dif_peso' => round($difPeso, 2),
+                    'z_scores' => [
+                        'imc' => round($z_imc, 3),
+                        'talla' => round($z_talla, 3),
+                        'pb' => round($z_pb, 3),
+                        'pct' => round($z_pct, 3),
+                        'cmb' => round($z_cmb, 3),
+                        'amb' => round($z_amb, 3),
+                        'agb' => round($z_agb, 3),
+                    ],
+                    'referencias' => [
+                        'oms' => $omsRef,
+                        'frisancho' => $frisanchoRef
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         return DB::transaction(function () use ($request) {
+            // Validar datos completos incluyendo diagnósticos
+            $request->validate([
+                'paciente_id' => 'required|exists:pacientes,id',
+                'fecha' => 'required|date',
+                'peso_kg' => 'required|numeric|min:0',
+                'talla_cm' => 'required|numeric|min:0',
+                'pb_mm' => 'required|numeric|min:0',
+                'pct_mm' => 'required|numeric|min:0',
+                'dx_z_imc' => 'required|string',
+                'dx_z_talla' => 'required|string',
+                'dx_z_pb' => 'required|string',
+                'dx_z_pct' => 'required|string',
+                'dx_z_cmb' => 'required|string',
+                'dx_z_amb' => 'required|string',
+                'dx_z_agb' => 'required|string',
+            ]);
+
             // Obtener paciente y datos
             $paciente = Paciente::findOrFail($request->paciente_id);
             
             // Calcular edad en meses (REDONDEAR A ENTERO)
             $fechaNacimiento = Carbon::parse($paciente->fecha_nacimiento);
             $fechaMedida = Carbon::parse($request->fecha);
-            $edadMeses = (int) round($fechaNacimiento->diffInMonths($fechaMedida)); // Redondear a entero
+            $edadMeses = (int) round($fechaNacimiento->diffInMonths($fechaMedida));
             $edadAnios = floor($edadMeses / 12);
 
             // Crear la medida
             $medida = Medida::create([
                 'paciente_id' => $request->paciente_id,
                 'fecha' => $request->fecha,
-                'edad_meses' => $edadMeses, // Ahora es entero
+                'edad_meses' => $edadMeses,
                 'peso_kg' => $request->peso_kg,
                 'talla_cm' => $request->talla_cm,
                 'pb_mm' => $request->pb_mm,
@@ -78,7 +318,7 @@ class MedidaController extends Controller
 
             // Buscar referencia OMS
             $omsRef = OmsRef::where('genero', $paciente->genero)
-                        ->where('edad_meses', $edadMeses) // Ahora coincide con entero
+                        ->where('edad_meses', $edadMeses)
                         ->first();
 
             if (!$omsRef) {
@@ -127,24 +367,53 @@ class MedidaController extends Controller
                 'z_cmb' => $z_cmb,
                 'z_amb' => $z_amb,
                 'z_agb' => $z_agb,
-                'dx_z_imc' => '',
-                'dx_z_talla' => '',
-                'dx_z_pb' => '',
-                'dx_z_pct' => '',
-                'dx_z_cmb' => '',
-                'dx_z_amb' => '',
-                'dx_z_agb' => '',
+                'dx_z_imc' => $request->dx_z_imc,
+                'dx_z_talla' => $request->dx_z_talla,
+                'dx_z_pb' => $request->dx_z_pb,
+                'dx_z_pct' => $request->dx_z_pct,
+                'dx_z_cmb' => $request->dx_z_cmb,
+                'dx_z_amb' => $request->dx_z_amb,
+                'dx_z_agb' => $request->dx_z_agb,
             ]);
 
             return redirect()->route('medidas.show', $medida->id)
-                        ->with('success', 'Evaluación creada exitosamente. Complete los diagnósticos.');
+                        ->with('success', 'Evaluación creada exitosamente.');
         });
     }
 
     public function show(Medida $medida)
     {
-        $medida->load(['paciente', 'evaluaciones.omsRef', 'evaluaciones.frisanchoRef']);
-        return view('medidas.show', compact('medida'));
+        $medida->load([
+            'paciente', 
+            'evaluaciones.omsRef', 
+            'evaluaciones.frisanchoRef',
+            'evaluaciones.usuario',
+            'paciente.medidas.evaluaciones' // Cargar todas las medidas del paciente
+        ]);
+        
+        $medidasPaciente = $medida->paciente->medidas()
+            ->with('evaluaciones')
+            ->orderBy('fecha', 'desc')
+            ->get();
+            
+        return view('medidas.show', compact('medida', 'medidasPaciente'));
+    }
+
+    public function toggleEstado(Request $request, Medida $medida)
+    {
+        $request->validate([
+            'estado' => 'required|in:Activo,Inactivo'
+        ]);
+
+        $medida->update([
+            'estado' => $request->estado
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado actualizado correctamente',
+            'nuevo_estado' => $medida->estado
+        ]);
     }
 
     private function calcularZScore($valor, $mediana, $mas_sd, $menos_sd)

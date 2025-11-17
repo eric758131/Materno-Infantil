@@ -261,4 +261,13 @@ class RequerimientoNutricionalController extends Controller
 
         return view('requerimiento_nutricional.historial', compact('paciente', 'requerimientos'));
     }
+
+    public function getRequerimientoActivo($pacienteId)
+    {
+        $requerimientoActivo = RequerimientoNutricional::where('paciente_id', $pacienteId)
+            ->activo()
+            ->first();
+
+        return response()->json($requerimientoActivo);
+    }
 }

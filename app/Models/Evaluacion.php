@@ -76,4 +76,9 @@ class Evaluacion extends Model
     {
         return $this->belongsTo(User::class, 'registrado_por');
     }
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'registrado_por');
+    }
 }

@@ -56,24 +56,6 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-use App\Http\Controllers\SeguimientoController;
-
-Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
-        Route::resource('seguimientos', SeguimientoController::class);
-
-        Route::prefix('seguimientos')->controller(SeguimientoController::class)->group(function () {
-            Route::post('/{seguimiento}/activar', 'activar')->name('seguimientos.activar');
-            Route::post('/{seguimiento}/desactivar', 'desactivar')->name('seguimientos.desactivar');
-            Route::post('/buscar', 'buscar')->name('seguimientos.buscar');
-        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.show');
-        Route::resource('seguimientos', SeguimientoController::class)->except(['show']);
-        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.paciente.show');
-        Route::get('/seguimientos/paciente/{paciente}', [SeguimientoController::class, 'show'])->name('seguimientos.show');
-        });
-    });
-});
-
 
 
 
@@ -83,19 +65,18 @@ use App\Http\Controllers\MedidaController;
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
         Route::controller(MedidaController::class)->group(function () {
-            Route::get('/molecula-calorica/{paciente}', [MoleculaCaloricaController::class, 'show'])
-    ->name('molecula_calorica.show');
-
-        Route::get('/medidas', 'index')->name('medidas.index');
-        Route::get('/medidas/create/{paciente}', 'create')->name('medidas.create');
-        Route::post('/medidas', 'store')->name('medidas.store');
-        Route::get('/medidas/{medida}', 'show')->name('medidas.show');
-        Route::get('/medidas/{medida}/calculos', [MedidaController::class, 'calculos'])->name('medidas.calculos');
-    });
+            Route::get('/medidas', 'index')->name('medidas.index');
+            Route::get('/medidas/create/{paciente}', 'create')->name('medidas.create');
+            Route::post('/medidas/calcular-preview', 'calcularPreview')->name('medidas.calcular-preview');
+            Route::post('/medidas', 'store')->name('medidas.store');
+            Route::get('/medidas/{medida}', 'show')->name('medidas.show');
+            Route::get('/medidas/{medida}/edit', 'edit')->name('medidas.edit');
+            Route::put('/medidas/{medida}', 'update')->name('medidas.update'); // ← AGREGAR ESTA LÍNEA
+            Route::patch('/medidas/{medida}/toggle-estado', 'toggleEstado')->name('medidas.toggle-estado');
+            Route::get('/medidas/{medida}/calculos', 'calculos')->name('medidas.calculos');
+        });
     });
 });
-
-
 
 
 use App\Http\Controllers\RequerimientoNutricionalController;
@@ -128,17 +109,25 @@ Route::middleware(['auth'])->group(function () {
             Route::get('requerimiento_nutricional/historial/{paciente}', 
     [RequerimientoNutricionalController::class, 'historial'])
     ->name('requerimiento_nutricional.historial');
+
+    Route::get('requerimiento_nutricional/activo/{pacienteId}', 
+    [RequerimientoNutricionalController::class, 'getRequerimientoActivo'])
+    ->name('requerimiento_nutricional.activo');
     });
 });
 
 
 use App\Http\Controllers\MoleculaCaloricaController;
 
-Route::get('moleculaCalorica', [MoleculaCaloricaController::class, 'index'])->name('moleculaCalorica.index');
-Route::get('moleculaCalorica/create', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create');
-Route::get('moleculaCalorica/create/{paciente}', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create.for.paciente');
-Route::post('moleculaCalorica', [MoleculaCaloricaController::class, 'store'])->name('moleculaCalorica.store');
-Route::get('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'show'])->name('moleculaCalorica.show');
-Route::get('moleculaCalorica/{moleculaCalorica}/edit', [MoleculaCaloricaController::class, 'edit'])->name('moleculaCalorica.edit');
-Route::put('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'update'])->name('moleculaCalorica.update');
-Route::delete('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'destroy'])->name('moleculaCalorica.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+        Route::get('moleculaCalorica', [MoleculaCaloricaController::class, 'index'])->name('moleculaCalorica.index');
+        Route::get('moleculaCalorica/create', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create');
+        Route::get('moleculaCalorica/create/{paciente}', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create.for.paciente');
+        Route::post('moleculaCalorica', [MoleculaCaloricaController::class, 'store'])->name('moleculaCalorica.store');
+        Route::get('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'show'])->name('moleculaCalorica.show');
+        Route::get('moleculaCalorica/{moleculaCalorica}/edit', [MoleculaCaloricaController::class, 'edit'])->name('moleculaCalorica.edit');
+        Route::put('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'update'])->name('moleculaCalorica.update');
+        Route::delete('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'destroy'])->name('moleculaCalorica.destroy');
+    });
+});
