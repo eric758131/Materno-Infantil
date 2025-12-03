@@ -44,7 +44,7 @@ return new class extends Migration
             $table->decimal('porcentaje_grasas', 5, 2)->nullable();
             $table->decimal('porcentaje_carbohidratos', 5, 2)->nullable();
 
-            // ✅ Estado del registro
+            // ✅ Estado del registro   
             $table->foreignId('registrado_por')->constrained('users');
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
 

@@ -10,6 +10,8 @@ use App\Models\Evaluacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\View;
 
 class MedidaController extends Controller
 {
@@ -574,5 +576,46 @@ class MedidaController extends Controller
             'resultado' => $resultado,
             'nombre' => $nombre
         ];
+    }
+
+    
+    public function downloadPdf(Paciente $paciente)
+    {
+        try {
+            // Cargar todas las medidas del paciente con sus evaluaciones, ordenadas por fecha
+            $paciente->load([
+                'medidas.evaluaciones.omsRef',
+                'medidas.evaluaciones.frisanchoRef',
+                'medidas.evaluaciones.usuario'
+            ]);
+
+            // Ordenar medidas por fecha (más reciente primero)
+            $medidas = $paciente->medidas->sortByDesc('fecha');
+
+            if ($medidas->isEmpty()) {
+                return redirect()->back()->with('error', 'No se encontraron evaluaciones para este paciente.');
+            }
+
+            $data = [
+                'paciente' => $paciente,
+                'medidas' => $medidas,
+                'fechaGeneracion' => now()->format('d/m/Y H:i:s'),
+            ];
+
+            $pdf = PDF::loadView('medidas.pdf.reporte', $data)
+                    ->setPaper('a4', 'portrait')
+                    ->setOptions([
+                        'defaultFont' => 'sans-serif',
+                        'isHtml5ParserEnabled' => true,
+                        'isRemoteEnabled' => true,
+                    ]);
+
+            $nombreArchivo = 'historial_evaluaciones_' . $paciente->CI . '.pdf';
+
+            return $pdf->download($nombreArchivo);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+        }
     }
 }

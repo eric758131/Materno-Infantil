@@ -74,6 +74,8 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/medidas/{medida}', 'update')->name('medidas.update'); // ← AGREGAR ESTA LÍNEA
             Route::patch('/medidas/{medida}/toggle-estado', 'toggleEstado')->name('medidas.toggle-estado');
             Route::get('/medidas/{medida}/calculos', 'calculos')->name('medidas.calculos');
+
+            Route::get('/pacientes/{paciente}/download-pdf', [MedidaController::class, 'downloadPdf'])->name('pacientes.download-pdf');
         });
     });
 });
@@ -129,5 +131,53 @@ Route::middleware(['auth'])->group(function () {
         Route::get('moleculaCalorica/{moleculaCalorica}/edit', [MoleculaCaloricaController::class, 'edit'])->name('moleculaCalorica.edit');
         Route::put('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'update'])->name('moleculaCalorica.update');
         Route::delete('moleculaCalorica/{moleculaCalorica}', [MoleculaCaloricaController::class, 'destroy'])->name('moleculaCalorica.destroy');
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use App\Http\Controllers\Reportes\UsuariosController;
+
+Route::prefix('reportes/usuarios')->name('reportes.usuarios.')->group(function () {
+    Route::get('/', [UsuariosController::class, 'index'])->name('index');
+    Route::get('/excel', [UsuariosController::class, 'exportExcel'])->name('export.excel');
+    Route::get('/pdf', [UsuariosController::class, 'exportPdf'])->name('export.pdf');
+});
+
+use App\Http\Controllers\Reportes\PacientesController;
+
+Route::prefix('reportes')->name('reportes.')->group(function () {
+    Route::prefix('pacientes')->name('pacientes.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Reportes\PacientesController::class, 'index'])->name('index');
+        Route::get('/export/excel', [\App\Http\Controllers\Reportes\PacientesController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/pdf', [\App\Http\Controllers\Reportes\PacientesController::class, 'exportPdf'])->name('export.pdf');
+    });
+});
+
+use App\Http\Controllers\Reportes\OmsReferenciasController;
+
+Route::prefix('reportes')->name('reportes.')->group(function () {
+    // Referencias OMS
+    Route::prefix('oms-referencias')->name('oms-referencias.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Reportes\OmsReferenciasController::class, 'index'])->name('index');
+        Route::get('/export/excel', [\App\Http\Controllers\Reportes\OmsReferenciasController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/pdf', [\App\Http\Controllers\Reportes\OmsReferenciasController::class, 'exportPdf'])->name('export.pdf');
     });
 });

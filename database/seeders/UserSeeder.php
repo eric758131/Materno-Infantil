@@ -27,7 +27,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Crear roles de ejemplo si no existen
-        $roles = ['SuperAdmin','Admin', 'Nutricionista', 'Medico', 'enfermero'];
+        $roles = ['SuperAdmin','Admin', 'Nutricionista'];
 
         foreach ($roles as $rol) {
             Role::firstOrCreate(['name' => $rol]);

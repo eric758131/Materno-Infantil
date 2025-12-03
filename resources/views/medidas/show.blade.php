@@ -265,6 +265,9 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ route('pacientes.download-pdf', $medida->paciente->id) }}" class="btn btn-danger me-md-2">
+                                        <i class="fas fa-file-pdf me-1"></i> Descargar Historial PDF
+                                    </a>
                                     <a href="{{ route('medidas.create', $medida->paciente) }}" class="btn btn-success me-md-2">
                                         <i class="fas fa-plus me-1"></i> Nueva Medida
                                     </a>
