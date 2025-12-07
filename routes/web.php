@@ -154,14 +154,18 @@ Route::middleware(['auth'])->group(function () {
 
 
 use App\Http\Controllers\Reportes\UsuariosController;
+use App\Http\Controllers\Reportes\PacientesController;
+use App\Http\Controllers\Reportes\OmsReferenciasController;
+use App\Http\Controllers\Reportes\FrisanchoController;
 
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:Nutricionista|SuperAdmin|Admin'])->group(function () {
 Route::prefix('reportes/usuarios')->name('reportes.usuarios.')->group(function () {
     Route::get('/', [UsuariosController::class, 'index'])->name('index');
     Route::get('/excel', [UsuariosController::class, 'exportExcel'])->name('export.excel');
     Route::get('/pdf', [UsuariosController::class, 'exportPdf'])->name('export.pdf');
 });
 
-use App\Http\Controllers\Reportes\PacientesController;
 
 Route::prefix('reportes')->name('reportes.')->group(function () {
     Route::prefix('pacientes')->name('pacientes.')->group(function () {
@@ -171,7 +175,6 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
     });
 });
 
-use App\Http\Controllers\Reportes\OmsReferenciasController;
 
 Route::prefix('reportes')->name('reportes.')->group(function () {
     // Referencias OMS
@@ -180,4 +183,27 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
         Route::get('/export/excel', [\App\Http\Controllers\Reportes\OmsReferenciasController::class, 'exportExcel'])->name('export.excel');
         Route::get('/export/pdf', [\App\Http\Controllers\Reportes\OmsReferenciasController::class, 'exportPdf'])->name('export.pdf');
     });
+});
+
+
+
+Route::prefix('reportes')->name('reportes.')->group(function () {
+    // Referencias Frisancho
+    Route::prefix('frisancho')->name('frisancho.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Reportes\FrisanchoController::class, 'index'])->name('index');
+        Route::get('/export/excel', [\App\Http\Controllers\Reportes\FrisanchoController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/pdf', [\App\Http\Controllers\Reportes\FrisanchoController::class, 'exportPdf'])->name('export.pdf');
+    });
+});
+
+    });
+});
+
+
+
+
+use Opcodes\LogViewer\Facades\LogViewer;
+
+Route::middleware('auth')->group(function () {
+   
 });
