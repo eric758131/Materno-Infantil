@@ -168,8 +168,48 @@
                     </li>
                     @endif
                 @endauth
+
+                @auth
+                    @if(auth()->user()->hasAnyRole(['SuperAdmin']))
+                    <li class="nav-item mb-2">
+                        <a href="{{ url('/log-viewer') }}"
+                        class="nav-link d-flex align-items-center rounded-3 p-3 {{ request()->is('log-viewer*') ? 'active bg-light bg-opacity-10 border-start border-3 border-warning' : 'hover-bg' }}">    
+                            <div class="nav-link-icon me-3">
+                                <i class="fas fa-file-alt fa-fw"></i>
+                            </div>
+                            <span class="fw-medium">Logs del Sistema</span>
+                            @if(request()->is('log-viewer*'))
+                                <span class="ms-auto">
+                                    <i class="fas fa-chevron-right fa-xs"></i>
+                                </span>
+                            @endif
+                        </a>
+                    </li>
+                    @endif
+                @endauth
+
+
             </ul>
+
+            {{-- Botón para generar backup (Solo SuperAdmin) --}}
+            @auth
+                @if(auth()->user()->hasRole('SuperAdmin'))
+                    <div class="mt-4 px-3">
+                        <form action="{{ route('backup.bd') }}" method="POST" id="backupForm" style="display: none;">
+                            @csrf
+                        </form>
+                        <button type="button" 
+                                class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center"
+                                onclick="confirmBackup()">
+                            <i class="fas fa-database me-2"></i>
+                            <span>Generar Backup</span>
+                        </button>
+                    </div>
+                @endif
+            @endauth
+
         </div>
+
 
         <!-- Pie de página mejorado - Botón de cerrar sesión más arriba -->
         <div class="sidebar-footer mt-auto border-top border-light border-opacity-10 pt-3">
@@ -187,11 +227,14 @@
             <!-- Información de versión y copyright -->
             <div class="text-center py-3 bg-dark bg-opacity-25 mt-2">
                 
-                <small class="text-light opacity-50">© 2024 Hospital Materno Infantil</small>
+                <small class="text-light opacity-50">© 2025 Hospital Materno Infantil</small>
             </div>
         </div>
     </div>
 </aside>
+
+<!-- Overlay para móviles -->
+<div class="sidebar-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 999; display: none;"></div>
 
 <!-- Estilos adicionales para mejorar la apariencia -->
 <style>
@@ -290,13 +333,7 @@
         max-height: calc(100vh - 280px) !important;
     }
 
-</style>
-
-<!-- Overlay para móviles -->
-<div class="sidebar-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 999; display: none;"></div>
-
-<!-- Estilos específicos de la barra lateral -->
-<style>
+    /* Estilos específicos de la barra lateral */
     .sidebar {
         transform: translateX(-100%);
         transition: all 0.3s ease;
@@ -348,3 +385,78 @@
         max-height: calc(100vh - 200px); /* Deja espacio para el encabezado y pie */
     }
 </style>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mostrar mensajes de sesión con alerts tradicionales
+        @if (session('success'))
+            showNotification('success', '{{ session('success') }}');
+        @endif
+
+        @if (session('error'))
+            showNotification('error', '{{ session('error') }}');
+        @endif
+    });
+
+    function confirmBackup() {
+        if (confirm('¿Estás seguro de querer generar un backup de la base de datos?')) {
+            // Mostrar mensaje de procesando
+            showProcessingMessage();
+            
+            // Enviar formulario
+            document.getElementById('backupForm').submit();
+        }
+    }
+
+    function showProcessingMessage() {
+        // Crear elemento de mensaje
+        const message = document.createElement('div');
+        message.className = 'position-fixed top-50 start-50 translate-middle p-3 bg-primary text-white rounded shadow-lg';
+        message.style.zIndex = '9999';
+        message.style.minWidth = '250px';
+        message.style.textAlign = 'center';
+        message.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            <span>Generando backup...</span>
+        `;
+        document.body.appendChild(message);
+        
+        // Auto-remover después de 3 segundos
+        setTimeout(() => {
+            if (message.parentNode) {
+                message.parentNode.removeChild(message);
+            }
+        }, 3000);
+    }
+
+    function showNotification(type, message) {
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `position-fixed top-0 end-0 m-3 p-3 rounded shadow-lg`;
+        notification.style.zIndex = '9999';
+        notification.style.maxWidth = '350px';
+        notification.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+        notification.style.color = 'white';
+        notification.style.borderLeft = `4px solid ${type === 'success' ? '#155724' : '#721c24'}`;
+        
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
+                <strong class="me-auto">${type === 'success' ? 'Exito' : 'Error'}</strong>
+                <button type="button" class="btn-close btn-close-white" onclick="this.parentNode.parentNode.remove()"></button>
+            </div>
+            <div class="mt-2">${message}</div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+</script>
+@endpush

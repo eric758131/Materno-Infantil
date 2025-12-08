@@ -207,3 +207,7 @@ use Opcodes\LogViewer\Facades\LogViewer;
 Route::middleware('auth')->group(function () {
    
 });
+
+use App\Http\Controllers\BackupController;
+
+Route::post('/backup-bd', [BackupController::class, 'backupBD'])->name('backup.bd');
