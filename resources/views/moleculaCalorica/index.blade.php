@@ -30,10 +30,61 @@
         </div>
     @endif
 
+    {{-- AGREGAR ESTA SECCIÓN DE BÚSQUEDA --}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ route('moleculaCalorica.index') }}" method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" 
+                               name="search" 
+                               class="form-control" 
+                               placeholder="Buscar paciente por nombre, apellido o CI (ignora acentos y mayúsculas)" 
+                               value="{{ old('search', request('search')) }}"
+                               autocomplete="off">
+                        @if(request('search'))
+                            <a href="{{ route('moleculaCalorica.index') }}" 
+                               class="btn btn-outline-secondary"
+                               title="Limpiar búsqueda">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+            
+            @if(request('search'))
+                <div class="mt-3">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Resultados para: "{{ request('search') }}"
+                        @if($pacientes->count() > 0)
+                            - {{ $pacientes->total() }} paciente(s) encontrado(s)
+                        @else
+                            - No se encontraron pacientes
+                        @endif
+                    </p>
+                </div>
+            @endif
+        </div>
+    </div>
+    {{-- FIN DE SECCIÓN DE BÚSQUEDA --}}
+
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h4 class="card-title mb-0">
                 <i class="fas fa-users"></i> Lista de Pacientes
+                @if(request('search'))
+                    <span class="badge bg-light text-primary ms-2">Búsqueda activa</span>
+                @endif
             </h4>
         </div>
         <div class="card-body">
@@ -143,14 +194,35 @@
                         </tbody>
                     </table>
                 </div>
+                
+                {{-- AGREGAR PAGINACIÓN --}}
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="text-muted">
+                        Mostrando {{ $pacientes->firstItem() }} - {{ $pacientes->lastItem() }} de {{ $pacientes->total() }} pacientes
+                    </div>
+                    <nav aria-label="Paginación de pacientes">
+                        {{ $pacientes->appends(request()->query())->links('pagination::bootstrap-5') }}
+                    </nav>
+                </div>
+                {{-- FIN DE PAGINACIÓN --}}
+                
             @else
                 <div class="text-center py-5">
-                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">No hay pacientes registrados</h4>
-                    <p class="text-muted">No se han encontrado pacientes en el sistema.</p>
-                    <a href="{{ route('pacientes.create') }}" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Registrar Primer Paciente
-                    </a>
+                    @if(request('search'))
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No se encontraron pacientes</h4>
+                        <p class="text-muted">No hay resultados para "{{ request('search') }}"</p>
+                        <a href="{{ route('moleculaCalorica.index') }}" class="btn btn-primary">
+                            <i class="fas fa-users"></i> Ver todos los pacientes
+                        </a>
+                    @else
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No hay pacientes registrados</h4>
+                        <p class="text-muted">No se han encontrado pacientes en el sistema.</p>
+                        <a href="{{ route('pacientes.create') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Registrar Primer Paciente
+                        </a>
+                    @endif
                 </div>
             @endif
         </div>

@@ -10,14 +10,55 @@ use Illuminate\Http\Request;
 
 class MoleculaCaloricaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pacientes = Paciente::orderBy('nombre')
+        $query = Paciente::query();
+        
+        // Búsqueda flexible por nombre, apellidos o CI
+        if ($request->has('search') && $request->search != '') {
+            $search = $this->normalizarBusqueda($request->search);
+            $query->where(function($q) use ($search) {
+                // Buscar en nombre completo (concatenado y normalizado)
+                $q->whereRaw("LOWER(CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno)) LIKE ?", ["%{$search}%"])
+                ->orWhereRaw("LOWER(CONCAT(nombre, ' ', apellido_paterno)) LIKE ?", ["%{$search}%"])
+                ->orWhereRaw("LOWER(CONCAT(apellido_paterno, ' ', apellido_materno)) LIKE ?", ["%{$search}%"])
+                ->orWhereRaw("LOWER(CONCAT(apellido_materno, ' ', apellido_paterno)) LIKE ?", ["%{$search}%"])
+                ->orWhere('nombre', 'ILIKE', "%{$search}%")  // ILIKE para PostgreSQL (case-insensitive)
+                ->orWhere('apellido_paterno', 'ILIKE', "%{$search}%")
+                ->orWhere('apellido_materno', 'ILIKE', "%{$search}%")
+                ->orWhere('CI', 'ILIKE', "%{$search}%");
+            });
+        }
+        
+        $pacientes = $query->orderBy('nombre')
             ->orderBy('apellido_paterno')
             ->orderBy('apellido_materno')
-            ->get();
+             ->paginate(10);
 
         return view('moleculaCalorica.index', compact('pacientes'));
+    }
+
+    private function normalizarBusqueda(string $texto): string
+    {
+        // Convertir a minúsculas y quitar espacios extras
+        $texto = strtolower(trim($texto));
+        
+        // Remover acentos y caracteres especiales
+        $texto = $this->removerAcentos($texto);
+        
+        return $texto;
+    }
+
+    private function removerAcentos(string $texto): string
+    {
+        $acentos = [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u',
+            'ñ' => 'n', 'Ñ' => 'n',
+            'ü' => 'u', 'Ü' => 'u'
+        ];
+        
+        return strtr($texto, $acentos);
     }
 
     public function create($pacienteId)

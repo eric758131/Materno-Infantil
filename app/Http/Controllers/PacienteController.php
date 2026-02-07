@@ -142,14 +142,14 @@ class PacienteController extends Controller
             'genero' => 'required|in:masculino,femenino,otro',
             'tutor_id' => 'nullable|exists:tutores,id',
             
-            // Campos para nuevo tutor
-            'tutor_nombre' => 'required|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
-            'tutor_apellido_paterno' => 'required|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
-            'tutor_apellido_materno' => 'required|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
-            'tutor_CI' => 'required|string|max:20|unique:tutores,CI',
-            'tutor_telefono' => 'required|string|max:15|regex:/^[0-9+\-\s]+$/',
-            'tutor_direccion' => 'required|string|max:255',
-            'tutor_parentesco' => 'required|string|max:50',
+            // Campos para nuevo tutor (ahora son opcionales si se selecciona tutor existente)
+            'tutor_nombre' => 'nullable|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
+            'tutor_apellido_paterno' => 'nullable|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
+            'tutor_apellido_materno' => 'nullable|string|max:100|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
+            'tutor_CI' => 'nullable|string|max:20',
+            'tutor_telefono' => 'nullable|string|max:15|regex:/^[0-9+\-\s]+$/',
+            'tutor_direccion' => 'nullable|string|max:255',
+            'tutor_parentesco' => 'nullable|string|max:50',
         ];
 
         $messages = [
@@ -165,6 +165,8 @@ class PacienteController extends Controller
 
         return Validator::make($request->all(), $rules, $messages);
     }
+
+    
 
     /**
      * Normalizar datos del paciente

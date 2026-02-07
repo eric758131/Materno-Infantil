@@ -40,7 +40,7 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\PacienteController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+    Route::middleware(['role:Nutricionista'])->group(function () {
         // Rutas para pacientes (incluyen gestión de tutores)
         Route::resource('pacientes', PacienteController::class);
 
@@ -63,7 +63,7 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\MedidaController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+    Route::middleware(['role:Nutricionista'])->group(function () {
         Route::controller(MedidaController::class)->group(function () {
             Route::get('/medidas', 'index')->name('medidas.index');
             Route::get('/medidas/create/{paciente}', 'create')->name('medidas.create');
@@ -84,7 +84,7 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\RequerimientoNutricionalController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+    Route::middleware(['role:Nutricionista'])->group(function () {
         Route::resource('requerimiento_nutricional', RequerimientoNutricionalController::class)
             ->parameters([
                 'requerimiento_nutricional' => 'requerimientoNutricional'
@@ -122,7 +122,7 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\MoleculaCaloricaController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin'])->group(function () {
+    Route::middleware(['role:Nutricionista'])->group(function () {
         Route::get('moleculaCalorica', [MoleculaCaloricaController::class, 'index'])->name('moleculaCalorica.index');
         Route::get('moleculaCalorica/create', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create');
         Route::get('moleculaCalorica/create/{paciente}', [MoleculaCaloricaController::class, 'create'])->name('moleculaCalorica.create.for.paciente');
@@ -159,7 +159,7 @@ use App\Http\Controllers\Reportes\OmsReferenciasController;
 use App\Http\Controllers\Reportes\FrisanchoController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:Nutricionista|SuperAdmin|Admin'])->group(function () {
+    Route::middleware(['role:SuperAdmin'])->group(function () {
 Route::prefix('reportes/usuarios')->name('reportes.usuarios.')->group(function () {
     Route::get('/', [UsuariosController::class, 'index'])->name('index');
     Route::get('/excel', [UsuariosController::class, 'exportExcel'])->name('export.excel');

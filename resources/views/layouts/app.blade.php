@@ -36,6 +36,9 @@
             display: flex;
             min-height: 100vh;
             overflow-x: hidden;
+            background-color: #f8fafc07; /* Gris azulado muy claro */
+            color: #334155; /* Gris oscuro suave para texto */
+            font-family: 'Roboto', sans-serif;
         }
 
         .main-content {
@@ -44,7 +47,16 @@
             padding: var(--content-padding);
             transition: all 0.3s ease;
             min-height: 100vh;
-            background-color: #f8f9fa;
+            background-color: #00070e15;
+        }
+
+        /* Para dar un poco de profundidad a los contenedores */
+        .container-fluid, .container {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
         @media (max-width: 992px) {

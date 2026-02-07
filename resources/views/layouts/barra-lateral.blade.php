@@ -45,20 +45,22 @@
 
                 <!-- Sección Nutricionista/SuperAdmin -->
                 @auth
-                    @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin']))
+                    @if(auth()->user()->hasAnyRole(['Nutricionista', 'Admin']))
                     <!-- Pacientes -->
-                    <li class="nav-item mb-2">
-                        <a href="{{ route('pacientes.index') }}" 
-                           class="nav-link d-flex align-items-center rounded-3 p-3 {{ request()->routeIs('pacientes.*') ? 'active bg-light bg-opacity-10 border-start border-3 border-success' : 'hover-bg' }}">
-                            <div class="nav-link-icon me-3">
-                                <i class="fas fa-user-injured fa-fw"></i>
-                            </div>
-                            <span class="fw-medium">Pacientes</span>
-                            @if(request()->routeIs('pacientes.*'))
-                                <span class="ms-auto"><i class="fas fa-chevron-right fa-xs"></i></span>
-                            @endif
-                        </a>
-                    </li>
+                     @if(auth()->user()->hasAnyRole(['Nutricionista']))
+                        <li class="nav-item mb-2">
+                            <a href="{{ route('pacientes.index') }}" 
+                            class="nav-link d-flex align-items-center rounded-3 p-3 {{ request()->routeIs('pacientes.*') ? 'active bg-light bg-opacity-10 border-start border-3 border-success' : 'hover-bg' }}">
+                                <div class="nav-link-icon me-3">
+                                    <i class="fas fa-user-injured fa-fw"></i>
+                                </div>
+                                <span class="fw-medium">Pacientes</span>
+                                @if(request()->routeIs('pacientes.*'))
+                                    <span class="ms-auto"><i class="fas fa-chevron-right fa-xs"></i></span>
+                                @endif
+                            </a>
+                        </li>
+                    
 
                     <!-- Medidas Antropométricas -->
                     <li class="nav-item mb-2">
@@ -101,6 +103,7 @@
                             @endif
                         </a>
                     </li>
+                    @endif
 
                     <!-- Separador de sección -->
                     <li class="nav-item my-3">
@@ -110,7 +113,7 @@
                     </li>
 
                     <!-- Reporte de Usuarios -->
-                    @if(auth()->user()->hasAnyRole(['Nutricionista', 'SuperAdmin', 'Admin']))
+                    @if(auth()->user()->hasAnyRole(['SuperAdmin', 'Admin']))
                     <li class="nav-item mb-2">
                         <a href="{{ route('reportes.usuarios.index') }}" 
                            class="nav-link d-flex align-items-center rounded-3 p-3 {{ request()->routeIs('reportes.usuarios.*') ? 'active bg-light bg-opacity-10 border-start border-3 border-info' : 'hover-bg' }}">
@@ -125,6 +128,7 @@
                     </li>
                     @endif
 
+                    @if(auth()->user()->hasAnyRole(['SuperAdmin', 'Admin']))
                     <!-- Reporte de Pacientes -->
                     <li class="nav-item mb-2">
                         <a href="{{ route('reportes.pacientes.index') }}" 
@@ -138,8 +142,10 @@
                             @endif
                         </a>
                     </li>
+                     @endif
 
                     <!-- Reporte de Referencias OMS -->
+                      @if(auth()->user()->hasAnyRole(['Nutricionista']))
                     <li class="nav-item mb-2">
                         <a href="{{ route('reportes.oms-referencias.index') }}" 
                            class="nav-link d-flex align-items-center rounded-3 p-3 {{ request()->routeIs('reportes.oms-referencias.*') ? 'active bg-light bg-opacity-10 border-start border-3 border-warning' : 'hover-bg' }}">
@@ -152,7 +158,9 @@
                             @endif
                         </a>
                     </li>
+                    @endif
 
+                     @if(auth()->user()->hasAnyRole(['Nutricionista']))
                     <!-- Reporte de Frisancho -->
                     <li class="nav-item mb-2">
                         <a href="{{ route('reportes.frisancho.index') }}" 
@@ -166,6 +174,8 @@
                             @endif
                         </a>
                     </li>
+                    @endif
+
                     @endif
                 @endauth
 
